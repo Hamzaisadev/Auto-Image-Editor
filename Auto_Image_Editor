@@ -1,1 +1,543 @@
+import tkinter as tk
+import customtkinter as ctk
+import os
+from tkinter import filedialog
+from PIL import ImageOps, ImageTk , ImageGrab , ImageDraw
+from PIL import ImageEnhance
+from PIL import Image, ImageFilter
+from tkinter import colorchooser
 
+
+image_size= (45,45)
+
+
+img_editor=ctk.CTk()
+img_editor.geometry("600x500")
+img_editor.title("Auto Image Editor")
+
+img_editor.resizable(False,False)
+
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("resources/red.json") 
+
+#defining global variables 
+WIDTH =350
+HEIGHT =500
+
+#defining functions
+file_path =""
+pen_size = 3
+pen_color = "black"
+
+
+
+
+
+#importing images
+
+
+upload_image=ctk.CTkImage(Image.open("resources/add-image.png"),size = (image_size))
+
+save_image=ctk.CTkImage(Image.open("resources/save.png"), size=(image_size))
+
+rotate_image=ctk.CTkImage(Image.open("resources/rotate.png"), size=(image_size))
+
+flip_image=ctk.CTkImage(Image.open("resources/flip.png"),size=(image_size))
+
+draw_image=ctk.CTkImage(Image.open("resources/draw.png"),size=(image_size))
+
+undo_image=ctk.CTkImage(Image.open("resources/undo.png"),size=(image_size))
+
+
+hdr_image = ctk.CTkImage(Image.open("resources/hdr.png"),size=(image_size))
+
+smooth_image =ctk.CTkImage(Image.open("resources/smooth.png"),size=(image_size))
+
+sharpen_image =ctk.CTkImage(Image.open("resources/sharpen.png"),size=(image_size))
+
+grayscale_image =ctk.CTkImage(Image.open("resources/grayscale.png"),size=(image_size))
+
+
+emboss_image =ctk.CTkImage(Image.open("resources/vignette.png"),size=(image_size))
+
+enhance_image = ctk.CTkImage(Image.open("resources/enhance.png"),size=(image_size))
+
+
+
+#here i will define the functions for the buttons
+
+def open_image():
+  global file_path
+  file_path = filedialog.askopenfilename(title="Open Image File", filetypes=[("Image Files", "*.jpg;*.jpeg;*.png;*.gif;*.bmp")])
+  if file_path:
+      global image, photo_image
+      image = Image.open(file_path)
+      new_width = int((WIDTH / 1))
+      image = image.resize((new_width, HEIGHT), Image.LANCZOS)
+      
+      image = ImageTk.PhotoImage(image)
+      image_canvas.create_image(0,0, anchor='nw', image =image)
+
+#lets set global rotation angle 
+rotation_angle = 0
+
+
+
+def rotate_img():
+  try:
+        global image, photo_image, rotation_angle
+        # open the image and rotate it
+        
+        image = Image.open(file_path)
+        new_width = int((WIDTH / 1))
+        image = image.resize((new_width, HEIGHT), Image.LANCZOS)
+        rotated_image = image.rotate(rotation_angle + 90)
+        rotation_angle += 90
+        # reset image if angle is a multiple of 360 degrees
+        if rotation_angle % 360 == 0:
+            rotation_angle = 0
+            image = Image.open(file_path)
+            image = image.resize((new_width, HEIGHT), Image.LANCZOS)
+            rotated_image = image
+        # convert the PIL image to a Tkinter PhotoImage and display it on the canvas
+        photo_image = ImageTk.PhotoImage(rotated_image)
+        image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+    # catches errors
+  except:
+    print("error")
+    
+# here I will create flip button function
+# first let me define global flip variable 
+is_flipped = False
+
+
+def flip_img():
+  try:
+    global file_path, is_flipped ,photo_image 
+    if not is_flipped:
+        image = Image.open(file_path)
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+        is_flipped = True
+    else:
+        image = Image.open(file_path)
+        is_flipped = False
+          
+    new_width = int((WIDTH / 1))
+    image = image.resize((new_width, HEIGHT), Image.LANCZOS)
+        # convert the PIL image to a Tkinter PhotoImage and display it on the canvas
+    photo_image = ImageTk.PhotoImage(image)
+    image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+
+  except:
+    print("error")
+    
+def draw(event):
+   global file_path 
+   if file_path:
+      x1, y1 = (event.x - pen_size), (event.y - pen_size)
+      x2, y2 = (event.x + pen_size), (event.y + pen_size)
+      image_canvas.create_oval(x1, y1, x2, y2, fill=pen_color, outline="", width=pen_size, tags="oval")
+  
+
+# now I will create draw button function
+  
+
+def undo():
+  global image, photo_image
+  image = Image.open(file_path)
+  new_width = int((WIDTH / 1))
+  image = image.resize((new_width, HEIGHT), Image.LANCZOS)
+      
+  image = ImageTk.PhotoImage(image)
+  image_canvas.create_image(0,0, anchor='nw', image =image)
+
+      
+def change_color():
+  global pen_color
+  pen_color = colorchooser.askcolor(title="Select Pen Color")[1]
+
+  
+
+  
+
+
+
+def save_button():
+  """Saves the edited image to a user-specified location.
+
+  Args:
+      None
+
+  Returns:
+      None. Shows a dialog box for selecting the save location.
+  """
+  global file_path, photo_image
+
+  # Open a file dialog box for saving the image
+  filename = filedialog.asksaveasfilename(
+      defaultextension=".jpg",
+      filetypes=[("JPEG", "*.jpg"), ("PNG", "*.png")],
+      title="Save Image"
+  )
+
+  # Check if a filename was selected
+  if filename:
+      # Get the underlying PIL image data from the PhotoImage object
+      image = ImageTk.getimage(photo_image)
+
+      # Save the PIL image using its save method
+      image.save(filename)
+      print(f"Image saved to: {filename}")
+
+
+
+
+
+
+
+#here I will make some custom filters using pillow module and I also took some AI help to make custom filters and some filters are predefined by pillow 
+
+
+
+
+
+
+
+
+
+def hdr_filter():
+  """Creates an HDR image by combining multiple exposures.
+
+  Args:
+    None
+
+  Returns:
+    None. Modifies the image displayed on the canvas.
+  """
+  global file_path, photo_image
+
+  # Load the image and convert it to RGB format
+  image = Image.open(file_path)
+
+  # Create darker and brighter versions of the image
+  darker = image.copy()
+  enhancer = ImageEnhance.Contrast(darker)
+  darker = enhancer.enhance(0.6)  # Adjust contrast by 0.5
+  brighter = image.copy()
+  enhancer = ImageEnhance.Brightness(brighter)
+  brighter = enhancer.enhance(0.8)  # Adjust brightness by 1.3
+
+  # Combine the images using weighted addition with a factor of 0.5 for each image
+  hdr_image = Image.blend(darker, brighter, alpha=3)  # Adjust alpha value to 3 for better results
+  image_canvas.update()
+  print("hdr applied")
+  # Resize the image to fit the canvas dimensions
+  new_width = int((WIDTH / 1))
+  hdr_image = hdr_image.resize((new_width, HEIGHT), Image.LANCZOS)
+  # Convert the PIL image to a Tkinter PhotoImage and display it on the canvas
+  photo_image = ImageTk.PhotoImage(hdr_image)
+  image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+
+def smooth_filter():
+  """Applies a Gaussian blur filter to smooth the image.
+
+  Args:
+      None
+
+  Returns:
+      None. Modifies the image displayed on the canvas.
+  """
+  global file_path, photo_image
+
+  # Open the image
+  image = Image.open(file_path)
+
+  # Apply Gaussian blur filter with a radius of 2 (adjust for more or less smoothing)
+  smoothed_image = image.filter(ImageFilter.GaussianBlur(radius=2))
+
+  # Resize the image to fit the canvas dimensions
+  new_width = int((WIDTH / 1))
+  smoothed_image = smoothed_image.resize((new_width, HEIGHT), Image.LANCZOS)
+  # Update the displayed image on the canvas
+  photo_image = ImageTk.PhotoImage(smoothed_image)
+  image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+
+
+
+
+
+def sharpen_filter():
+  """Applies a sharpening filter to enhance edges in the image.
+
+  Args:
+      None
+
+  Returns:
+      None. Modifies the image displayed on the canvas.
+  """
+  global file_path, photo_image
+
+  # Open the image
+  image = Image.open(file_path)
+
+  # Enhance sharpness with a factor of 2 (adjust for more or less sharpening)
+  sharpener = ImageEnhance.Sharpness(image)
+  sharpened_image = sharpener.enhance(factor=5.0)
+
+  # Resize the image to fit the canvas dimensions
+  new_width = int((WIDTH / 1))
+  sharpened_image = sharpened_image.resize((new_width, HEIGHT), Image.LANCZOS)
+
+  # Update the displayed image on the canvas
+  photo_image = ImageTk.PhotoImage(sharpened_image)
+  image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+
+
+
+
+
+
+
+def grayscale_filter():
+  """Converts an image to grayscale."""
+  global file_path, photo_image
+  image = Image.open(file_path).convert('L') 
+  # Convert to grayscale mode
+  new_width = int((WIDTH / 1))
+  image = image.resize((new_width, HEIGHT), Image.LANCZOS)
+  photo_image = ImageTk.PhotoImage(image)
+  image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+  
+
+
+def emboss_filter():
+  """Applies a vignette effect to darken the corners of the image.
+
+  Args:
+      None
+
+  Returns:
+      None. Modifies the image displayed on the canvas.
+  """
+  global file_path, photo_image
+
+  # Open the image
+  image = Image.open(file_path)
+
+  image_emboss = image.filter(ImageFilter.EMBOSS)
+
+  # Resize the image to fit the canvas dimensions
+  new_width = int((WIDTH / 1))
+  image = image_emboss.resize((new_width, HEIGHT), Image.LANCZOS)
+
+  # Update the displayed image on the canvas
+  photo_image = ImageTk.PhotoImage(image)
+  image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+
+def enhance_filter():
+  global file_path, photo_image
+
+  # Open the image
+  image = Image.open(file_path)
+
+  # Apply Gaussian blur filter with a radius of 2 (adjust for more or less smoothing)
+  enhanced_image = image.filter(ImageFilter.EDGE_ENHANCE)
+
+  # Resize the image to fit the canvas dimensions
+  new_width = int((WIDTH / 1))
+  enhanced_image = enhanced_image.resize((new_width, HEIGHT), Image.LANCZOS)
+  # Update the displayed image on the canvas
+  photo_image = ImageTk.PhotoImage(enhanced_image)
+  image_canvas.create_image(0, 0, anchor="nw", image=photo_image)
+
+
+
+
+
+
+
+
+#let's make two frames
+
+
+edit_btns = ctk.CTkFrame(master=img_editor, width=100, height=480)
+
+
+filter_btns = ctk.CTkFrame(master=img_editor, width=100, height=480)
+
+
+edit_btns.place(x=10,y=10)
+filter_btns.place(x=490,y=10)
+
+
+#here I will make a canvas for image
+
+image_canvas =ctk.CTkCanvas(master=img_editor, width=WIDTH, height=HEIGHT,
+                           )
+
+image_canvas.place(x=125,y=1)
+image_canvas.bind("<B1-Motion>", draw)
+
+#first let me make 14 buttons 
+
+#buttons for edit frame
+
+upload_btn=ctk.CTkButton(edit_btns,
+                         width=20,
+                         height=50,
+                         text="Upload",
+                         image=upload_image,
+                        fg_color="transparent",
+                         compound="top",
+                         text_color="Red",
+                         command=open_image
+                         
+                        )
+
+rotate_btn=ctk.CTkButton(edit_btns,
+                         width=20,
+                         height=50,
+                         text="Rotate",
+                         image=rotate_image,
+                        fg_color="transparent",
+                        compound="top",
+                         text_color="Red"
+                        , command=rotate_img)
+
+flip_btn=ctk.CTkButton(edit_btns,
+                       width=20,
+                        height=50,
+                       text="Flip",
+                       image=flip_image,
+                       fg_color="transparent",
+compound="top",
+                         text_color="Red",
+                       command=flip_img
+)
+
+draw_btn=ctk.CTkButton(edit_btns,
+                       width=20,
+                        height=50,
+                       text="Draw",
+                       image=draw_image,
+                      fg_color="transparent",
+                       compound="top",
+                         text_color="Red",
+                         command= change_color)
+
+undo_btn=ctk.CTkButton(edit_btns,
+                        width=20,
+                         height=50,
+                        text="Undo",
+                        image=undo_image,
+                        fg_color="transparent",
+                         text_color="Red",
+compound="top",
+command= undo)
+
+save_btn=ctk.CTkButton(edit_btns,
+                       width=20,
+                        height=50,
+                       text ="Save" ,
+                       image=save_image,
+                       fg_color="transparent",
+                       compound="top",
+                         text_color="Red",
+                        command= save_button)
+
+
+#buttons for filter frame
+
+
+
+hdr_btn=ctk.CTkButton(filter_btns,
+                width=20,
+                height=50,
+                text ="HDR" ,
+                image=hdr_image,
+                fg_color="transparent",
+                compound="top",
+                text_color="Red",
+                command=hdr_filter)
+
+smooth_btn=ctk.CTkButton(filter_btns,
+                width=20,
+                height=50,
+                text ="Smooth" ,
+                image=smooth_image,
+                fg_color="transparent",
+                compound="top",
+                text_color="Red",
+                command=smooth_filter)
+
+sharpen_btn=ctk.CTkButton(filter_btns,
+                width=20,
+                height=50,
+                text ="Sharpen" ,
+                image=sharpen_image,
+                fg_color="transparent",
+                compound="top",
+                text_color="Red",
+                command=sharpen_filter)
+
+grayscale_btn=ctk.CTkButton(filter_btns,
+               width=20,
+                height=50,
+                text ="Grayscale" ,
+                image=grayscale_image,
+                fg_color="transparent",
+                compound="top",
+                text_color="Red",
+                command=grayscale_filter)
+
+emboss_btn=ctk.CTkButton(filter_btns,
+               width=20,
+                height=50,
+                text ="Emboss" ,
+                image=emboss_image,
+                fg_color="transparent",
+                compound="top",
+                text_color="Red",
+                command=emboss_filter)
+
+enhance_btn=ctk.CTkButton(filter_btns,
+               width=20,
+                height=50,
+                text ="Enhance" ,
+                image=enhance_image,
+                fg_color="transparent",
+                compound="top",
+                text_color="Red",
+                command=enhance_filter)
+
+
+
+
+
+
+#here I will place those button
+
+#edit btns
+
+upload_btn.place(x=20,y=5)
+rotate_btn.place(x=20,y=85)
+flip_btn.place(x=20,y=165)
+draw_btn.place(x=20,y=245)
+undo_btn.place(x=20,y=325)
+save_btn.place(x=20,y=405)
+
+#filter_btns
+
+hdr_btn.place(x=20,y=5)
+smooth_btn.place(x=20,y=85)
+sharpen_btn.place(x=20,y=165)
+grayscale_btn.place(x=20,y=245)
+emboss_btn.place(x=20,y=325)
+enhance_btn.place(x=20,y=405)
+
+
+
+
+
+
+img_editor.mainloop()
